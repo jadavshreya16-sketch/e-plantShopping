@@ -1,17 +1,34 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { incrementItem, decrementItem, removeItem } from "../redux/CartSlice";
+import { updateQuantity, removeItem } from "../redux/CartSlice";
+import { useNavigate } from "react-router-dom";
 
 function CartItem() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const cartItems = useSelector((state) => state.cart.items);
   const totalQuantity = useSelector((state) => state.cart.totalQuantity);
 
-  // 🔹 Calculate total cost
+  // 🔹 Total Cart Cost
   const totalCost = cartItems.reduce(
-    (total, item) => total + item.price * (item.quantity || 1),
+    (total, item) => total + item.price * item.quantity,
     0
   );
+
+  // 🔹 Increase Quantity
+  const handleIncrement = (id) => {
+    dispatch(updateQuantity({ id, amount: 1 }));
+  };
+
+  // 🔹 Decrease Quantity (FIXED: removes item at 0)
+  const handleDecrement = (id, quantity) => {
+    if (quantity === 1) {
+      dispatch(removeItem(id)); // 🔥 FIX
+    } else {
+      dispatch(updateQuantity({ id, amount: -1 }));
+    }
+  };
 
   return (
     <div>
@@ -20,39 +37,73 @@ function CartItem() {
       {/* 🔹 Total Items */}
       <h2>Total Items: {totalQuantity}</h2>
 
-      {/* 🔹 Cart Items */}
       {cartItems.length === 0 ? (
         <p>Your cart is empty</p>
       ) : (
-        cartItems.map((item) => (
-          <div key={item.id} style={{ border: "1px solid #ccc", margin: "10px", padding: "10px" }}>
-            <h3>{item.name}</h3>
-            <p>Price: ${item.price}</p>
-            <p>Quantity: {item.quantity || 1}</p>
+        cartItems.map((item) => {
+          const itemTotal = item.price * item.quantity;
 
-            {/* 🔹 Increase / Decrease */}
-            <button onClick={() => dispatch(incrementItem(item.id))}>+</button>
-            <button onClick={() => dispatch(decrementItem(item.id))}>-</button>
+          return (
+            <div
+              key={item.id}
+              style={{
+                border: "1px solid #ccc",
+                margin: "10px",
+                padding: "10px",
+                display: "flex",
+                gap: "20px",
+                alignItems: "center",
+              }}
+            >
+              {/* 🔥 FIX 1: IMAGE ADDED */}
+              <img
+                src={item.image}
+                alt={item.name}
+                width="100"
+                height="100"
+              />
 
-            {/* 🔹 Delete */}
-            <button onClick={() => dispatch(removeItem(item.id))}>
-              Remove
-            </button>
-          </div>
-        ))
+              <div>
+                <h3>{item.name}</h3>
+                <p>Price: ${item.price}</p>
+                <p>Quantity: {item.quantity}</p>
+
+                {/* 🔥 FIX 2: ITEM TOTAL COST */}
+                <p>Total: ${itemTotal}</p>
+
+                {/* 🔹 Buttons */}
+                <button onClick={() => handleIncrement(item.id)}>+</button>
+
+                <button
+                  onClick={() =>
+                    handleDecrement(item.id, item.quantity)
+                  }
+                >
+                  -
+                </button>
+
+                {/* 🔹 Remove */}
+                <button onClick={() => dispatch(removeItem(item.id))}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          );
+        })
       )}
 
-      {/* 🔹 Total Cost */}
+      {/* 🔹 Total Cart Cost */}
       <h2>Total Cost: ${totalCost}</h2>
 
-      {/* 🔹 Buttons */}
+      {/* 🔹 Checkout */}
       <button onClick={() => alert("Coming Soon!")}>
         Checkout
       </button>
 
       <br /><br />
 
-      <button onClick={() => window.location.href = "/plants"}>
+      {/* 🔥 FIX 3: NAVIGATION */}
+      <button onClick={() => navigate("/plants")}>
         Continue Shopping
       </button>
     </div>
